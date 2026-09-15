@@ -2,7 +2,7 @@
 
 Teste técnico: API REST em FastAPI para consultar a lista de indicados e vencedores da categoria **Pior Filme** do Golden Raspberry Awards e identificar o(s) produtor(es) com o **maior** e o **menor** intervalo entre dois prêmios consecutivos.
 
-> Projeto em desenvolvimento. A estrutura inicial, persistência dos dados e importação do dataset já estão implementadas. As rotas da API e a lógica de negócio ainda estão em desenvolvimento. Detalhes de escopo em [SPECS.md](SPECS.md).
+> Projeto em desenvolvimento. A estrutura da aplicação, persistência dos dados, importação do dataset e operações CRUD da API já estão implementadas. A lógica de negócio para cálculo dos intervalos entre prêmios ainda está em desenvolvimento. Detalhes de escopo em [SPECS.md](SPECS.md).
 
 ## Stack
 
@@ -57,11 +57,17 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
   * valor vazio → `False`
 * [x] Normalização dos estúdios para lista de strings
 * [x] Estrutura para registro do uso de IA no desenvolvimento
+* [x] Configuração dos routers da API
+* [x] Endpoint para criação de filmes (`POST /movies/`)
+* [x] Endpoint para consulta de filmes (`GET /movies/`)
+* [x] Endpoint para atualização completa de filmes (`PUT /movies/{movie_id}`)
+* [x] Endpoint para atualização parcial de filmes (`PATCH /movies/{movie_id}`)
+* [x] Endpoint para remoção de filmes (`DELETE /movies/{movie_id}`)
+* [x] Validação de recurso inexistente com resposta HTTP `404`
+* [x] Testes manuais dos endpoints CRUD via Swagger
 
 ### Em desenvolvimento
 
-* [ ] Implementação das rotas REST
-* [ ] Implementação da consulta de filmes
 * [ ] Implementação da lógica para identificar maior intervalo entre prêmios
 * [ ] Implementação da lógica para identificar menor intervalo entre prêmios
 * [ ] Testes automatizados da API e das regras de negócio
@@ -97,11 +103,27 @@ Docs interativas (Swagger):
 
 http://127.0.0.1:8000/docs
 
+## Endpoints
+
+Atualmente, a API possui as seguintes operações:
+
+| Método   | Endpoint             | Descrição                      |
+| -------- | -------------------- | ------------------------------ |
+| `GET`    | `/movies/`           | Lista os filmes cadastrados    |
+| `POST`   | `/movies/`           | Cria um novo filme             |
+| `PUT`    | `/movies/{movie_id}` | Atualiza um filme              |
+| `PATCH`  | `/movies/{movie_id}` | Atualiza parcialmente um filme |
+| `DELETE` | `/movies/{movie_id}` | Remove um filme                |
+
+A documentação interativa e os schemas das requisições e respostas podem ser consultados pelo Swagger em `/docs`.
+
 ## Testes
 
 ```bash
 uv run pytest
 ```
+
+Os testes automatizados das rotas e das regras de negócio ainda estão em desenvolvimento.
 
 ## Banco de dados
 
@@ -135,4 +157,3 @@ O campo `winner` é armazenado como booleano. No SQLite, `True` é representado 
 * [SPECS.md](SPECS.md) — requisitos conhecidos do teste e o que falta implementar.
 * [CLAUDE.md](CLAUDE.md) — contexto do projeto e regras de desenvolvimento.
 * [ai/](ai/) — registro do uso de IA no desenvolvimento deste projeto.
-

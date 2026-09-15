@@ -12,6 +12,13 @@ class MovieBase(BaseModel):
     producers: str
     winner: bool
 
-class MovieResponde(MovieBase):
+class MovieResponse(MovieBase):
     """Schema for movie response data."""
     id: int
+
+class MovieUpdate(BaseModel):
+    title: str | None = None
+    year: int | None = None
+    studios: list[str] | None = None
+    producers: str | None = None
+    winner: bool | None = None

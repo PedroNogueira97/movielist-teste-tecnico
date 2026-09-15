@@ -1,16 +1,15 @@
-"""FastAPI application entrypoint.
-
-Golden Raspberry Awards API - skeleton only, no routes registered yet.
-"""
-
 from fastapi import FastAPI
+
+from app.api.routes import movies
+
 
 app = FastAPI(
     title="Golden Raspberry Awards API",
-    version="0.1.0",
+    description=(
+        "API REST para consulta dos indicados e vencedores "
+        "da categoria Pior Filme do Golden Raspberry Awards."
+    ),
+    version="1.0.0",
 )
 
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+app.include_router(movies.router)
