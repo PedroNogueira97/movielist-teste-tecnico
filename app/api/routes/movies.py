@@ -23,7 +23,7 @@ def get_movie_id(movie_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Movie not found")
     return movie
 
-@router.post("/", response_model=MovieResponse)
+@router.post("/", response_model=MovieResponse, status_code=201)
 def create_movie(movie: MovieBase, db: Session = Depends(get_db)):
     db_movie = Movie(
         title=movie.title,
@@ -74,7 +74,7 @@ def patch_movie(movie_id: int, movie: MovieUpdate, db: Session = Depends(get_db)
     db.refresh(db_movie)
     return db_movie
 
-@router.delete("/{movie_id}", response_model=MovieResponse)
+@router.delete("/{movie_id}", response_model=MovieResponse, status_code=204)
 def delete_movie(movie_id: int, db: Session = Depends(get_db)):
     db_movie = db.query(Movie).filter(Movie.id == movie_id).first()
     if not db_movie:
