@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.movie import Movie
 from app.schemas.movie import MovieBase, MovieResponse, MovieUpdate
+from app.services.producer_awards import calculate_producer_intervals
+from app.schemas.movie import ProducerIntervalResponse
 
 
 router = APIRouter(
@@ -15,6 +17,21 @@ router = APIRouter(
 @router.get("/", response_model=list[MovieResponse])
 def list_movies(db: Session = Depends(get_db)):
     return db.query(Movie).all()
+
+@router.get(
+        "/producers/awards", 
+        response_model=ProducerIntervalResponse
+    )
+def get_producer_awards(
+    db: Session = Depends(get_db)
+):
+    movies = (
+        db.query(Movie)
+        .filter(Movie.winner.is_(True))
+        .all()
+    )
+    return calculate_producer_intervals(movies)
+
 
 @router.get("/{movie_id}", response_model=MovieResponse)
 def get_movie_id(movie_id: int, db: Session = Depends(get_db)):
@@ -74,7 +91,7 @@ def patch_movie(movie_id: int, movie: MovieUpdate, db: Session = Depends(get_db)
     db.refresh(db_movie)
     return db_movie
 
-@router.delete("/{movie_id}", response_model=MovieResponse, status_code=204)
+@router.delete("/{movie_id}", status_code=204)
 def delete_movie(movie_id: int, db: Session = Depends(get_db)):
     db_movie = db.query(Movie).filter(Movie.id == movie_id).first()
     if not db_movie:

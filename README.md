@@ -2,7 +2,7 @@
 
 Teste técnico: API REST em FastAPI para consultar a lista de indicados e vencedores da categoria **Pior Filme** do Golden Raspberry Awards e identificar o(s) produtor(es) com o **maior** e o **menor** intervalo entre dois prêmios consecutivos.
 
-> Projeto em desenvolvimento. A estrutura da aplicação, persistência dos dados, importação do dataset e operações CRUD da API já estão implementadas. A lógica de negócio para cálculo dos intervalos entre prêmios ainda está em desenvolvimento. Detalhes de escopo em [SPECS.md](SPECS.md).
+> Projeto em desenvolvimento. A estrutura da aplicação, persistência dos dados, importação do dataset, operações CRUD da API e a primeira implementação da lógica de cálculo dos intervalos já estão implementadas. Os testes das regras de negócio estão sendo desenvolvidos de forma preliminar antes da integração completa com banco de dados e API. Detalhes de escopo em [SPECS.md](SPECS.md).
 
 ## Stack
 
@@ -63,14 +63,23 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
 * [x] Endpoint para atualização completa de filmes (`PUT /movies/{movie_id}`)
 * [x] Endpoint para atualização parcial de filmes (`PATCH /movies/{movie_id}`)
 * [x] Endpoint para remoção de filmes (`DELETE /movies/{movie_id}`)
+* [x] Uso de `201 Created` para criação de filmes
+* [x] Uso de `204 No Content` para remoção de filmes
 * [x] Validação de recurso inexistente com resposta HTTP `404`
-* [x] Testes manuais dos endpoints CRUD via Swagger
+* [x] Implementação inicial da lógica de cálculo dos intervalos entre prêmios
+* [x] Identificação do maior intervalo entre prêmios consecutivos
+* [x] Identificação do menor intervalo entre prêmios consecutivos
+* [x] Tratamento de múltiplos produtores por filme
+* [x] Tratamento de empate nos maiores e menores intervalos
+* [x] Teste preliminar da regra de negócio de intervalos
 
 ### Em desenvolvimento
 
-* [ ] Implementação da lógica para identificar maior intervalo entre prêmios
-* [ ] Implementação da lógica para identificar menor intervalo entre prêmios
-* [ ] Testes automatizados da API e das regras de negócio
+* [ ] Ampliar os testes automatizados das regras de negócio
+* [ ] Testes de integração com banco de dados
+* [ ] Testes automatizados dos endpoints da API
+* [ ] Validar a lógica de intervalos utilizando o dataset completo
+* [ ] Finalizar a integração da lógica de intervalos com a API
 * [ ] Documentação final da API
 
 ## Como rodar
@@ -107,23 +116,33 @@ http://127.0.0.1:8000/docs
 
 Atualmente, a API possui as seguintes operações:
 
-| Método   | Endpoint             | Descrição                      |
-| -------- | -------------------- | ------------------------------ |
-| `GET`    | `/movies/`           | Lista os filmes cadastrados    |
-| `POST`   | `/movies/`           | Cria um novo filme             |
-| `PUT`    | `/movies/{movie_id}` | Atualiza um filme              |
-| `PATCH`  | `/movies/{movie_id}` | Atualiza parcialmente um filme |
-| `DELETE` | `/movies/{movie_id}` | Remove um filme                |
+| Método   | Endpoint             | Status de sucesso | Descrição                      |
+| -------- | -------------------- | ----------------- | ------------------------------ |
+| `GET`    | `/movies/`           | `200 OK`          | Lista os filmes cadastrados    |
+| `POST`   | `/movies/`           | `201 Created`     | Cria um novo filme             |
+| `PUT`    | `/movies/{movie_id}` | `200 OK`          | Atualiza um filme              |
+| `PATCH`  | `/movies/{movie_id}` | `200 OK`          | Atualiza parcialmente um filme |
+| `DELETE` | `/movies/{movie_id}` | `204 No Content`  | Remove um filme                |
+
+Recursos inexistentes retornam `404 Not Found`.
+
+Dados inválidos enviados à API são validados pelo FastAPI/Pydantic e podem resultar em `422 Unprocessable Entity`.
 
 A documentação interativa e os schemas das requisições e respostas podem ser consultados pelo Swagger em `/docs`.
 
 ## Testes
 
+Os testes estão sendo implementados de forma incremental.
+
+Neste momento, foram criados **testes preliminares das regras de negócio**, isolando a lógica de cálculo dos intervalos antes de integrá-la diretamente ao banco de dados e aos endpoints da API.
+
+Essa abordagem permite validar primeiro a regra de negócio de forma isolada e, posteriormente, adicionar os testes de integração e da API.
+
+Executar os testes:
+
 ```bash
 uv run pytest
 ```
-
-Os testes automatizados das rotas e das regras de negócio ainda estão em desenvolvimento.
 
 ## Banco de dados
 

@@ -22,3 +22,13 @@ class MovieUpdate(BaseModel):
     studios: list[str] | None = None
     producers: str | None = None
     winner: bool | None = None
+
+class ProducerInterval(BaseModel):
+    producer: str
+    interval: int
+    previousWin: int
+    followingWin: int
+
+class ProducerIntervalResponse(BaseModel):
+    min: list[ProducerInterval]
+    max: list[ProducerInterval]
