@@ -1,23 +1,19 @@
-
 from collections import defaultdict
 
 from app.models.movie import Movie
-from app.schemas.movie import ProducerIntervalResponse, ProducerInterval
+from app.schemas.movie import ProducerInterval, ProducerIntervalResponse
 
-def calculate_producer_intervals(movies: list[Movie]) -> ProducerIntervalResponse:
+
+def calculate_producer_intervals(
+    movies: list[Movie],
+) -> ProducerIntervalResponse:
     producer_wins: dict[str, list[int]] = defaultdict(list)
 
     for movie in movies:
         if not movie.winner:
             continue
 
-        producers = [
-            producer.strip()
-            for producer in movie.producers.split(",")
-            if producer.strip()
-        ]
-
-        for producer in producers:
+        for producer in movie.producers:
             producer_wins[producer].append(movie.year)
 
     intervals: list[ProducerInterval] = []
@@ -34,33 +30,29 @@ def calculate_producer_intervals(movies: list[Movie]) -> ProducerIntervalRespons
                     followingWin=following_win,
                 )
             )
-        
+
     if not intervals:
-        return ProducerIntervalResponse(
-            min=[], 
-            max=[],
-        )
-    
+        return ProducerIntervalResponse(min=[], max=[])
+
     min_interval = min(
-        interval.interval 
+        interval.interval
         for interval in intervals
     )
 
     max_interval = max(
-        interval.interval 
+        interval.interval
         for interval in intervals
     )
 
     return ProducerIntervalResponse(
         min=[
-            interval 
-            for interval in intervals 
+            interval
+            for interval in intervals
             if interval.interval == min_interval
         ],
         max=[
-            interval 
-            for interval in intervals 
+            interval
+            for interval in intervals
             if interval.interval == max_interval
         ],
     )
-    

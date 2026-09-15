@@ -1,7 +1,3 @@
-"""Pydantic schemas for movie input/output.
-
-Not implemented yet.
-"""
 from pydantic import BaseModel
 
 class MovieBase(BaseModel):
@@ -9,7 +5,7 @@ class MovieBase(BaseModel):
     title: str
     year: int
     studios: list[str]
-    producers: str
+    producers: list[str]
     winner: bool
 
 class MovieResponse(MovieBase):
@@ -20,7 +16,7 @@ class MovieUpdate(BaseModel):
     title: str | None = None
     year: int | None = None
     studios: list[str] | None = None
-    producers: str | None = None
+    producers: list[str] | None = None
     winner: bool | None = None
 
 class ProducerInterval(BaseModel):

@@ -8,6 +8,14 @@ from app.schemas.movie import MovieBase
 
 CSV_PATH = Path(__file__).resolve().parent.parent / "data" / "Movielist.csv"
 
+
+def normalize_studios(studios: str) -> list[str]:
+    return [
+        studio.strip()
+        for studio in studios.split(",")
+        if studio.strip()
+    ]
+
 def normalize_winner(value: str) -> bool:
     value = value.strip().lower()
 
@@ -19,21 +27,25 @@ def normalize_winner(value: str) -> bool:
 
     raise ValueError(f"Valor inválido para winner: {value!r}")
 
-
-def normalize_row(row: dict[str, str]) -> MovieBase:
-    studios = [
-        studio.strip()
-        for studio in row["studios"].split(",")
-        if studio.strip()
+def normalize_producers(producers: str) -> list[str]:
+    producers = producers.replace(" and ", ",")
+    return [
+        producer.strip()
+        for producer in producers.split(",")
+        if producer.strip()
     ]
 
+
+def normalize_row(row: dict[str, str]) -> MovieBase:
+    studios = normalize_studios(row["studios"])
     winner = normalize_winner(row["winner"])
+    producers = normalize_producers(row["producers"])
 
     return MovieBase(
         title=row["title"].strip(),
         year=int(row["year"]),
         studios=studios,
-        producers=row["producers"].strip(),
+        producers=producers,
         winner=winner,
     )
 

@@ -1,7 +1,3 @@
-"""SQLAlchemy model for the `movies` table.
-
-Not implemented yet.
-"""
 from sqlalchemy import Boolean, Integer, JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
@@ -31,8 +27,8 @@ class Movie(Base):
         nullable=False
     )
 
-    producers: Mapped[str] = mapped_column(
-        String, 
+    producers: Mapped[list[str]] = mapped_column(
+        JSON, 
         nullable=False
     )
     
