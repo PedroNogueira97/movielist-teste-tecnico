@@ -26,3 +26,12 @@ def test_normalize_multiple_producers_with_comma():
         "Producer A",
         "Producer B",
     ]
+def test_normalize_multiple_producers_with_and():
+    producers = normalize_producers(
+        "Producer A and Producer B"
+    )
+
+    assert producers == [
+        "Producer A",
+        "Producer B",
+    ]
