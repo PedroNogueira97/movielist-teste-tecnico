@@ -26,3 +26,4 @@ conversas.
 
 - [001 - Estrutura inicial do projeto](prompts/001-project-structure.md)
 - [002 - Suíte de testes (unitários, integração de API e dataset real)](prompts/002-test-suite.md)
+- [003 - Importação automática e idempotente do CSV na subida da aplicação](prompts/003-startup-csv-import.md)

@@ -37,3 +37,27 @@ memória.
 
 Referência: [001 - Estrutura inicial do projeto](prompts/001-project-structure.md),
 [002 - Suíte de testes](prompts/002-test-suite.md)
+
+## Importação do CSV via lifespan, com acesso ao banco por atributo de módulo
+
+A importação automática do CSV na subida da aplicação usa o `lifespan`
+do FastAPI (`app/main.py`), e tanto `create_tables_and_import_movies()`
+quanto `import_movies()` (`scripts/import_csv.py`) acessam
+`app.database.engine`/`SessionLocal` por atributo de módulo
+(`database.engine`, `database.SessionLocal`) em vez de importar esses
+nomes diretamente no topo do arquivo. Motivo: isso permite que os testes
+apontem o `lifespan` para um banco SQLite isolado usando `monkeypatch`
+(`tests/test_startup.py`), sem precisar de uma camada de injeção de
+dependência dedicada — mantém a arquitetura simples do projeto. Testes
+que não exercitam o `lifespan` (CRUD, dataset real) evitam usar
+`TestClient` como context manager, já que isso é o que dispara o
+`lifespan` na Starlette; confirmado experimentalmente que instanciar
+`TestClient(app)` sem `with` não dispara startup/shutdown.
+
+A importação em si (`import_movies()`) é idempotente: verifica se já
+existe algum filme no banco antes de ler o CSV, e se sim, ignora a
+importação. Isso resolve tanto o caso "app reiniciada sobre banco já
+populado" quanto rodar `scripts/import_csv.py` manualmente mais de uma
+vez.
+
+Referência: [003 - Importação automática e idempotente do CSV](prompts/003-startup-csv-import.md)

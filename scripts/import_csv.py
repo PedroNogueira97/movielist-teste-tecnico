@@ -1,7 +1,7 @@
 import csv
 from pathlib import Path
 
-from app.database import SessionLocal
+from app import database
 from app.models.movie import Movie
 from app.schemas.movie import MovieBase
 
@@ -51,9 +51,19 @@ def normalize_row(row: dict[str, str]) -> MovieBase:
 
 
 def import_movies() -> None:
-    db = SessionLocal()
+    """Import data/Movielist.csv into the movies table.
+
+    Idempotent: if the table already has any movie, importing is skipped
+    to avoid duplicating records (e.g. when the app restarts against an
+    already-populated database).
+    """
+    db = database.SessionLocal()
 
     try:
+        if db.query(Movie).first() is not None:
+            print("Banco já possui filmes importados; importação ignorada.")
+            return
+
         with CSV_PATH.open(
             mode="r",
             encoding="utf-8-sig",

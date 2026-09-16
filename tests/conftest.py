@@ -32,12 +32,21 @@ def db_session():
 
 @pytest.fixture()
 def client(db_session: Session):
-    """TestClient wired to the isolated test database via get_db override."""
+    """TestClient wired to the isolated test database via get_db override.
+
+    Deliberately not used as a context manager (`with TestClient(app)`):
+    that would trigger the app's lifespan, which creates tables and
+    imports the CSV against `app.database.engine`/`SessionLocal` — i.e.
+    the real movies.db, since this fixture only overrides `get_db` for
+    route handlers. Startup/import behavior is covered separately in
+    tests/test_startup.py, where the database module's engine/session
+    are monkeypatched before the lifespan runs.
+    """
 
     def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
+    test_client = TestClient(app)
+    yield test_client
     app.dependency_overrides.clear()

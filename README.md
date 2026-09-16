@@ -2,7 +2,7 @@
 
 Teste técnico: API REST em FastAPI para consultar a lista de indicados e vencedores da categoria **Pior Filme** do Golden Raspberry Awards e identificar o(s) produtor(es) com o **maior** e o **menor** intervalo entre dois prêmios consecutivos.
 
-> Escopo do teste técnico concluído: estrutura da aplicação, persistência dos dados, importação do dataset, operações CRUD da API e o endpoint de cálculo dos intervalos entre prêmios, com testes unitários e de integração (banco isolado e dataset real) cobrindo esses fluxos. Detalhes de escopo em [SPECS.md](SPECS.md).
+> Escopo do teste técnico concluído: estrutura da aplicação, persistência dos dados, importação automática e idempotente do dataset na subida da API, operações CRUD e o endpoint de cálculo dos intervalos entre prêmios, com testes unitários e de integração (banco isolado, dataset real e inicialização da aplicação) cobrindo esses fluxos. Detalhes de escopo em [SPECS.md](SPECS.md).
 
 ## Stack
 
@@ -18,7 +18,8 @@ Teste técnico: API REST em FastAPI para consultar a lista de indicados e venced
 
 ```text
 app/
-├── main.py                  # instancia o FastAPI e registra routers
+├── main.py                  # instancia o FastAPI, registra routers e
+│                             # roda o lifespan (cria tabelas + importa o CSV)
 ├── database.py              # engine/session do SQLAlchemy
 ├── models/                  # modelos SQLAlchemy (tabelas)
 ├── schemas/                 # schemas Pydantic (entrada/saída da API)
@@ -28,8 +29,9 @@ app/
 tests/                       # testes pytest
 
 scripts/
-├── create_database.py       # criação das tabelas
-└── import_csv.py            # importação e normalização do CSV
+├── create_database.py       # criação das tabelas (uso manual/opcional)
+└── import_csv.py            # importação idempotente do CSV (usada pelo
+                              # lifespan da API e reutilizável via CLI)
 
 data/
 └── Movielist.csv            # dataset de origem
@@ -50,6 +52,9 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
 * [x] Schemas Pydantic para os dados de filmes
 * [x] Criação do banco SQLite
 * [x] Importação do dataset `Movielist.csv`
+* [x] Importação automática e idempotente do CSV na subida da aplicação
+  (`lifespan` do FastAPI em `app/main.py`) — banco vazio é populado; banco
+  já populado não é reimportado nem duplica registros
 * [x] Normalização dos dados durante a importação
 * [x] Conversão de `winner` para booleano
 
@@ -82,6 +87,9 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
 * [x] Validar a lógica de intervalos utilizando o dataset completo
 * [x] Endpoint de cálculo dos intervalos integrado à API
   (`GET /movies/producers/awards`)
+* [x] Testes da inicialização da aplicação (`tests/test_startup.py`):
+  banco vazio importa o CSV, banco já populado não reimporta, e
+  `import_movies()` chamado duas vezes não duplica registros
 * [x] Documentação final da API (README com passo a passo de execução,
   testes e lista de endpoints; Swagger em `/docs`)
 
@@ -100,27 +108,38 @@ Pré-requisito: Python 3.12 e [uv](https://docs.astral.sh/uv/) instalados.
    uv sync
    ```
 
-2. Criar o banco de dados (gera `movies.db` a partir dos modelos):
-
-   ```bash
-   uv run python -m scripts.create_database
-   ```
-
-3. Importar o dataset `data/Movielist.csv` para o banco:
-
-   ```bash
-   uv run python -m scripts.import_csv
-   ```
-
-4. Subir a API em modo desenvolvimento:
+2. Subir a API em modo desenvolvimento:
 
    ```bash
    uv run uvicorn app.main:app --reload
    ```
 
-5. Acessar a documentação interativa (Swagger):
+   Na subida (evento `lifespan` do FastAPI, em `app/main.py`), a
+   aplicação já cria o banco `movies.db` (se não existir) e importa
+   `data/Movielist.csv` automaticamente — não é preciso rodar nenhum
+   script manualmente para começar a usar a API. Essa importação é
+   **idempotente**: se o banco já tiver filmes (por exemplo, em uma
+   próxima subida do servidor), a importação é ignorada e nenhum
+   registro é duplicado.
+
+3. Acessar a documentação interativa (Swagger):
 
    http://127.0.0.1:8000/docs
+
+### Rodando os scripts manualmente (opcional)
+
+`scripts/create_database.py` e `scripts/import_csv.py` continuam
+disponíveis para uso manual — por exemplo, para popular o banco sem
+subir o servidor, ou para reexecutar a importação isoladamente (também
+idempotente: rodar `import_csv` várias vezes não duplica filmes):
+
+```bash
+uv run python -m scripts.create_database
+uv run python -m scripts.import_csv
+```
+
+Para forçar uma nova importação do zero, apague `movies.db` antes de
+rodar a aplicação ou os scripts.
 
 ## Endpoints
 
@@ -144,7 +163,7 @@ A documentação interativa e os schemas das requisições e respostas podem ser
 
 ## Testes
 
-O projeto tem três níveis de teste:
+O projeto tem quatro níveis de teste:
 
 * **Unitários** (`tests/test_producer_awards.py`, `tests/test_import_csv.py`)
   — cobrem a regra de cálculo dos intervalos por produtor (maior/menor
@@ -159,12 +178,27 @@ O projeto tem três níveis de teste:
   — carrega `data/Movielist.csv` por completo em um banco de teste isolado
   e valida o resultado final do endpoint de intervalos contra o esperado
   em [SPECS.md](SPECS.md).
+* **Inicialização da aplicação** (`tests/test_startup.py`) — valida o
+  `lifespan` do FastAPI: banco vazio importa o CSV completo (206 filmes)
+  e calcula os intervalos corretamente; banco já populado não reimporta;
+  e chamar `import_movies()` duas vezes não duplica registros.
 
 Os testes de integração usam um banco SQLite **isolado em memória**
 (`tests/conftest.py`), nunca o `movies.db` de desenvolvimento — cada teste
 sobe seu próprio banco, populado e descartado ao final. Por isso os testes
 podem ser executados a qualquer momento, mesmo com a API rodando, sem
 risco de alterar os dados reais.
+
+Os testes de CRUD/API (`tests/test_movies.py`,
+`tests/test_producer_awards_dataset.py`) usam o `TestClient` **sem**
+disparar o `lifespan` da aplicação (evitando que ele tente importar o CSV
+no banco isolado desses testes) — o banco de teste é criado diretamente
+pela fixture `db_session`. Já os testes de inicialização
+(`tests/test_startup.py`) usam o `TestClient` como *context manager* (que
+dispara o `lifespan`) sobre um banco isolado obtido substituindo
+temporariamente `app.database.engine`/`SessionLocal` (via `monkeypatch`),
+garantindo que o comportamento real de subida da aplicação seja testado
+sem tocar o `movies.db`.
 
 Para rodar os testes:
 
@@ -196,6 +230,11 @@ O banco é criado localmente como:
 ```text
 movies.db
 ```
+
+Tanto a criação das tabelas quanto a importação de `data/Movielist.csv`
+acontecem automaticamente na subida da aplicação (ver "Como rodar"
+acima), de forma idempotente: rodar a API várias vezes sobre o mesmo
+`movies.db` não duplica os filmes.
 
 Para visualizar os dados pelo SQLite:
 
