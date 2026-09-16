@@ -25,4 +25,15 @@ Adicionado `httpx` ao grupo `dev` do `uv`. Motivo: é dependência exigida
 pelo `TestClient` do FastAPI/Starlette para os testes de API
 (`tests/test_movies.py`), não uma dependência de negócio adicional.
 
-Referência: [001 - Estrutura inicial do projeto](prompts/001-project-structure.md)
+## Banco de teste SQLite em memória, isolado do movies.db
+
+Testes de integração (`tests/conftest.py`) usam um banco SQLite em
+memória (`sqlite://` + `StaticPool`), criado e descartado a cada teste,
+em vez de reutilizar `movies.db` ou criar um arquivo `.db` de teste em
+disco. Motivo: evita qualquer risco de os testes alterarem dados de
+desenvolvimento e não deixa arquivos residuais; `StaticPool` garante que
+todas as conexões da mesma sessão de teste enxerguem o mesmo banco em
+memória.
+
+Referência: [001 - Estrutura inicial do projeto](prompts/001-project-structure.md),
+[002 - Suíte de testes](prompts/002-test-suite.md)

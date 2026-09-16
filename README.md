@@ -2,7 +2,7 @@
 
 Teste técnico: API REST em FastAPI para consultar a lista de indicados e vencedores da categoria **Pior Filme** do Golden Raspberry Awards e identificar o(s) produtor(es) com o **maior** e o **menor** intervalo entre dois prêmios consecutivos.
 
-> Projeto em desenvolvimento. A estrutura da aplicação, persistência dos dados, importação do dataset, operações CRUD da API e a primeira implementação da lógica de cálculo dos intervalos já estão implementadas. Os testes das regras de negócio estão sendo desenvolvidos de forma preliminar antes da integração completa com banco de dados e API. Detalhes de escopo em [SPECS.md](SPECS.md).
+> Escopo do teste técnico concluído: estrutura da aplicação, persistência dos dados, importação do dataset, operações CRUD da API e o endpoint de cálculo dos intervalos entre prêmios, com testes unitários e de integração (banco isolado e dataset real) cobrindo esses fluxos. Detalhes de escopo em [SPECS.md](SPECS.md).
 
 ## Stack
 
@@ -59,7 +59,8 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
 * [x] Estrutura para registro do uso de IA no desenvolvimento
 * [x] Configuração dos routers da API
 * [x] Endpoint para criação de filmes (`POST /movies/`)
-* [x] Endpoint para consulta de filmes (`GET /movies/`)
+* [x] Endpoint para listagem de filmes (`GET /movies/`)
+* [x] Endpoint para consulta de um filme por id (`GET /movies/{movie_id}`)
 * [x] Endpoint para atualização completa de filmes (`PUT /movies/{movie_id}`)
 * [x] Endpoint para atualização parcial de filmes (`PATCH /movies/{movie_id}`)
 * [x] Endpoint para remoção de filmes (`DELETE /movies/{movie_id}`)
@@ -72,77 +73,119 @@ Regras de arquitetura e desenvolvimento em [CLAUDE.md](CLAUDE.md).
 * [x] Tratamento de múltiplos produtores por filme
 * [x] Tratamento de empate nos maiores e menores intervalos
 * [x] Teste preliminar da regra de negócio de intervalos
+* [x] Ampliar os testes automatizados das regras de negócio (empate,
+  múltiplos produtores, produtor com único prêmio, filmes não vencedores)
+* [x] Testes de integração com banco de dados (SQLite isolado em memória,
+  sem afetar `movies.db`)
+* [x] Testes automatizados dos endpoints da API (CRUD e códigos HTTP
+  200/201/204/404/422)
+* [x] Validar a lógica de intervalos utilizando o dataset completo
+* [x] Endpoint de cálculo dos intervalos integrado à API
+  (`GET /movies/producers/awards`)
+* [x] Documentação final da API (README com passo a passo de execução,
+  testes e lista de endpoints; Swagger em `/docs`)
 
 ### Em desenvolvimento
 
-* [ ] Ampliar os testes automatizados das regras de negócio
-* [ ] Testes de integração com banco de dados
-* [ ] Testes automatizados dos endpoints da API
-* [ ] Validar a lógica de intervalos utilizando o dataset completo
-* [ ] Finalizar a integração da lógica de intervalos com a API
-* [ ] Documentação final da API
+Nenhum item pendente no momento. Novas funcionalidades só serão
+adicionadas se especificadas em [SPECS.md](SPECS.md).
 
 ## Como rodar
 
-Instalar dependências:
+Pré-requisito: Python 3.12 e [uv](https://docs.astral.sh/uv/) instalados.
 
-```bash
-uv sync
-```
+1. Instalar dependências:
 
-Criar o banco de dados:
+   ```bash
+   uv sync
+   ```
 
-```bash
-uv run python -m scripts.create_database
-```
+2. Criar o banco de dados (gera `movies.db` a partir dos modelos):
 
-Importar o dataset:
+   ```bash
+   uv run python -m scripts.create_database
+   ```
 
-```bash
-uv run python -m scripts.import_csv
-```
+3. Importar o dataset `data/Movielist.csv` para o banco:
 
-Subir a API em modo desenvolvimento:
+   ```bash
+   uv run python -m scripts.import_csv
+   ```
 
-```bash
-uv run uvicorn app.main:app --reload
-```
+4. Subir a API em modo desenvolvimento:
 
-Docs interativas (Swagger):
+   ```bash
+   uv run uvicorn app.main:app --reload
+   ```
 
-http://127.0.0.1:8000/docs
+5. Acessar a documentação interativa (Swagger):
+
+   http://127.0.0.1:8000/docs
 
 ## Endpoints
 
 Atualmente, a API possui as seguintes operações:
 
-| Método   | Endpoint             | Status de sucesso | Descrição                      |
-| -------- | -------------------- | ----------------- | ------------------------------ |
-| `GET`    | `/movies/`           | `200 OK`          | Lista os filmes cadastrados    |
-| `POST`   | `/movies/`           | `201 Created`     | Cria um novo filme             |
-| `PUT`    | `/movies/{movie_id}` | `200 OK`          | Atualiza um filme              |
-| `PATCH`  | `/movies/{movie_id}` | `200 OK`          | Atualiza parcialmente um filme |
-| `DELETE` | `/movies/{movie_id}` | `204 No Content`  | Remove um filme                |
+| Método   | Endpoint                     | Status de sucesso | Descrição                                                        |
+| -------- | ----------------------------- | ----------------- | ----------------------------------------------------------------- |
+| `GET`    | `/movies/`                    | `200 OK`          | Lista os filmes cadastrados                                       |
+| `GET`    | `/movies/{movie_id}`          | `200 OK`          | Consulta um filme pelo id                                         |
+| `GET`    | `/movies/producers/awards`    | `200 OK`          | Retorna os produtores com o maior e o menor intervalo entre vitórias consecutivas |
+| `POST`   | `/movies/`                    | `201 Created`     | Cria um novo filme                                                |
+| `PUT`    | `/movies/{movie_id}`          | `200 OK`          | Atualiza um filme (substituição completa)                        |
+| `PATCH`  | `/movies/{movie_id}`          | `200 OK`          | Atualiza parcialmente um filme                                    |
+| `DELETE` | `/movies/{movie_id}`          | `204 No Content`  | Remove um filme                                                   |
 
-Recursos inexistentes retornam `404 Not Found`.
+Recursos inexistentes (`GET`/`PUT`/`PATCH`/`DELETE` por `movie_id` que não existe) retornam `404 Not Found`.
 
-Dados inválidos enviados à API são validados pelo FastAPI/Pydantic e podem resultar em `422 Unprocessable Entity`.
+Dados inválidos enviados à API são validados pelo FastAPI/Pydantic e resultam em `422 Unprocessable Entity`.
 
 A documentação interativa e os schemas das requisições e respostas podem ser consultados pelo Swagger em `/docs`.
 
 ## Testes
 
-Os testes estão sendo implementados de forma incremental.
+O projeto tem três níveis de teste:
 
-Neste momento, foram criados **testes preliminares das regras de negócio**, isolando a lógica de cálculo dos intervalos antes de integrá-la diretamente ao banco de dados e aos endpoints da API.
+* **Unitários** (`tests/test_producer_awards.py`, `tests/test_import_csv.py`)
+  — cobrem a regra de cálculo dos intervalos por produtor (maior/menor
+  intervalo, empate, múltiplos produtores por filme, produtor com um único
+  prêmio, filmes não vencedores) e a normalização do CSV, sem tocar banco
+  de dados.
+* **Integração da API** (`tests/test_movies.py`) — exercitam os fluxos CRUD
+  dos endpoints via `TestClient`, validando os status HTTP esperados
+  (`200`, `201`, `204`, `404`, `422`) e o endpoint de intervalos
+  (`GET /movies/producers/awards`) integrado a FastAPI + SQLAlchemy + banco.
+* **Integração com o dataset real** (`tests/test_producer_awards_dataset.py`)
+  — carrega `data/Movielist.csv` por completo em um banco de teste isolado
+  e valida o resultado final do endpoint de intervalos contra o esperado
+  em [SPECS.md](SPECS.md).
 
-Essa abordagem permite validar primeiro a regra de negócio de forma isolada e, posteriormente, adicionar os testes de integração e da API.
+Os testes de integração usam um banco SQLite **isolado em memória**
+(`tests/conftest.py`), nunca o `movies.db` de desenvolvimento — cada teste
+sobe seu próprio banco, populado e descartado ao final. Por isso os testes
+podem ser executados a qualquer momento, mesmo com a API rodando, sem
+risco de alterar os dados reais.
 
-Executar os testes:
+Para rodar os testes:
 
-```bash
-uv run pytest
-```
+1. Instalar as dependências (inclui `pytest` e `httpx`, usados apenas em
+   desenvolvimento):
+
+   ```bash
+   uv sync
+   ```
+
+2. Executar toda a suíte:
+
+   ```bash
+   uv run pytest
+   ```
+
+   Ou, para ver cada teste individualmente:
+
+   ```bash
+   uv run pytest -v
+   ```
 
 ## Banco de dados
 

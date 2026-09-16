@@ -25,3 +25,4 @@ conversas.
 ## Registros existentes
 
 - [001 - Estrutura inicial do projeto](prompts/001-project-structure.md)
+- [002 - Suíte de testes (unitários, integração de API e dataset real)](prompts/002-test-suite.md)
